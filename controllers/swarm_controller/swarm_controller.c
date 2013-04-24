@@ -13,6 +13,7 @@
 #include <webots/differential_wheels.h>
 #include <webots/distance_sensor.h>
 #include <webots/light_sensor.h>
+#include <webots/led.h>
 #include "search.c"
 #include "stagnation.c"
 #include "retrieval.c"
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
   int STOP_TIME = 0; // # Counts the TimeSteps the robot stands still before evaluating weather to push or realign.
   int NOF_REALIGNMENTS = 0;
   while (wb_robot_step(TIME_STEP) != -1) {
-    
+      printf("Step: %d", wb_robot_step(TIME_STEP));
 	int CONTROLLING_LAYER = 0;
 	double distance_sensors[8];
 	double previous_distance_sensors[8];
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 		printf("Controlling layer set to stun!\n");
       }
 
-		retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();
+		retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
 		retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
 
 	// Pseudo-code for stagnation:
@@ -175,34 +176,22 @@ int main(int argc, char **argv)
 		
 		CONTROLLING_LAYER = 2;
 		stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
-		retrieval_right_wheel_speed = get_stagnation_right_wheel_speed();
+		stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 	}
-
 	if(CONTROLLING_LAYER==1){
+	printf("RETRIEVING!\n");
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
-               printf("RETRIEVING!\n");
-	}
+               
+	}else if(CONTROLLING_LAYER==2){    
 
-	else if(CONTROLLING_LAYER==2){    
-	
      wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
-
 	
-	}
-	else{
+	}else{
 		wb_differential_wheels_set_speed(search_left_wheel_speed,search_right_wheel_speed);
-		//printf("Hello World!\n");
-		
 	}
 	for(i=0; i<8; i++){
 		previous_distance_sensors[i]=distance_sensors[i];
-  };
-  
-  /* Enter your cleanup code here */
-  
-  /* This is necessary to cleanup webots resources */
+            }
+  }
   wb_robot_cleanup();
-  
-  return 0;
-}
 }
