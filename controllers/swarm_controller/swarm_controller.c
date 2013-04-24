@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	int CONTROLLING_LAYER = 0;
 	double distance_sensors[8];
 	double previous_distance_sensors[8];
-	double light_sensors[8];
+	int light_sensors[8];
 	double retrieval_left_wheel_speed;
            double retrieval_right_wheel_speed; 
 	double search_left_wheel_speed;
