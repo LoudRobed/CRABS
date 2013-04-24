@@ -1,0 +1,306 @@
+/*
+ * crip.c
+ *
+ *  Created on: 26. jan. 2011
+ *      Author: camillka
+ */
+#include <webots/robot.h>
+#include <webots/differential_wheels.h>
+#include <webots/distance_sensor.h>
+#include <webots/light_sensor.h>
+#include <webots/led.h>
+#include "search.h"
+#include "retrieval.h"
+#include "stagnation.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define TIME_STEP 64
+#define WHEEL_RADIUS 0.0205
+#define AXLE_LENGTH 0.052
+#define ENCODER_RESOLUTION 159.23
+#define RANGE (1024 / 2)
+#define ON            1
+#define OFF           0
+#define TRUE		  1
+#define FALSE		  0
+#define NB_LEDS       10
+#define NB_LIGHT_SENS 8
+#define NB_DIST_SENS  8
+#define DIST_THRESHOLD 250
+#define IR_THRESHOLD 3700
+#define TIMESTEP_LIMIT 3000
+
+int it;
+/* Arrays */
+double speed[2];
+double distance_sensors_value[8];
+double previous_distance_values[8];
+int IR_sensor_value[8];
+int previous_IR_values[8];
+
+/* Counters */
+int stagnation_counter = 0;
+int feedback_counter = 5;
+int timesteps = 0;
+
+
+/* Stagnation variables*/
+double stagnation_threshold = 150; // feedback_counter = 5 => 150 timesteps
+
+
+/* Booleans */
+int swarm = FALSE; // Converge to the box
+int stagnation = FALSE; //  Find new spot
+int count_timesteps = FALSE; // Start counting timesteps only after the first stagnation
+int close_to_box = FALSE;
+int continue_shut_down = TRUE;
+int red_search_light = FALSE;
+
+/* When stagnation happen, it should affect the checking of stagnation threshold
+ * as negative feedback, decreasing the threshold. If no stagnation, it should give
+ * positive feedback. Changing the feedback_counter and calling this method will
+ * do just that
+ */
+void update_stagnation_threshold()
+{
+	double feed = feedback_counter;
+	double s = 50.0 + (5.0/(10.0-feed)*100.0);
+	stagnation_threshold = s;
+}
+void update_feedback_counter_limit(int boolean)
+{
+	if(boolean) // true = stagnation = negative feedback
+	{
+		if(feedback_counter != 1)
+			feedback_counter = feedback_counter -1;
+	}
+	else // false = no stagnation = positive feedback
+	{
+		if(feedback_counter != 8)
+			feedback_counter = feedback_counter +1;
+	}
+}
+void copy_IR_dist_array()
+{
+	for(it=0; it<NB_DIST_SENS; it++)
+	{
+		previous_IR_values[it] = IR_sensor_value[it];
+		previous_distance_values[it] = distance_sensors_value[it];
+	}
+}
+
+/* When the time limit has been reached */
+void shut_down(close_to_box, sensors_threshold)
+{
+	if(close_to_box == FALSE && sensors_threshold > 3)
+	{
+		continue_shut_down = FALSE;
+		wb_differential_wheels_set_speed(0,0);
+	}
+	else
+	{
+		update_search_speed(distance_sensors_value, DIST_THRESHOLD);
+		speed[0] = get_search_left_wheel_speed();
+		speed[1] = get_search_right_wheel_speed();
+
+		/* set speed values */
+	    wb_differential_wheels_set_speed(speed[0],speed[1]);
+	}
+    wb_robot_step(TIME_STEP);
+
+
+}
+int main(int argc, char *argv[]) {
+
+  /* define variables */
+  WbDeviceTag led[NB_LEDS];
+  WbDeviceTag ps[NB_DIST_SENS];
+  WbDeviceTag ls[NB_LIGHT_SENS];
+  srand((unsigned)(time(0)));
+
+  /* initialize Webots */
+  wb_robot_init();
+
+  /* get and enable devices */
+
+  /* led lights */
+  char text[5] = "led0";
+  for(it=0; it<NB_LEDS; it++) {
+    led[it] = wb_robot_get_device(text);
+    text[3]++;
+    wb_led_set(led[it],OFF);
+  }
+
+  /* distance sensors */
+  char textPS[] = "ps0";
+  for (it=0; it<NB_DIST_SENS; it++) {
+    ps[it] = wb_robot_get_device(textPS);
+    textPS[2]++;
+    wb_distance_sensor_enable(ps[it],TIME_STEP);
+  }
+
+  /* IR light sensors */
+  char textLS[] = "ls0";
+  for (it=0;it<NB_LIGHT_SENS;it++) {
+    ls[it] = wb_robot_get_device(textLS);
+    textLS[2]++;
+    wb_light_sensor_enable(ls[it], TIME_STEP);
+  }
+
+  /* main loop */
+  while (timesteps < TIMESTEP_LIMIT) {
+
+	  if(count_timesteps == TRUE) // We don't want to try forever, we may also have achieved our goal.
+		  timesteps = timesteps + 1;
+	/*************************
+	 * Get sensor values
+	 *************************/
+
+	  /* get distance sensor values */
+    for (it = 0; it < 8; it++) {
+      distance_sensors_value[it] = wb_distance_sensor_get_value(ps[it]);
+    }
+
+    /* get IR light sensor values */
+    swarm = FALSE; // No box
+    for (it=0;it<NB_LIGHT_SENS;it++)
+    {
+      IR_sensor_value[it] = wb_light_sensor_get_value(ls[it]);
+      if(IR_sensor_value[it] < IR_THRESHOLD)
+    	  swarm = TRUE; // Prey retrieval
+    }
+
+    /***********************
+     * Brooks subsumption
+     ***********************/
+
+    if(stagnation) // Recover and align
+    {
+    	count_timesteps = TRUE;
+    	// Should only be true once for every stagnation
+    	if(stagnation_counter > stagnation_threshold)
+    	{
+    		reset_stagnation();
+    		valuate_pushing(distance_sensors_value, previous_distance_values);
+    		stagnation_counter = 0;
+    		update_feedback_counter_limit(get_stagnation_state());
+    		update_stagnation_threshold();
+    	}
+    	stagnation = get_stagnation_state(); // Update
+    	if(stagnation)
+    	{
+    		stagnation_recovery(distance_sensors_value, DIST_THRESHOLD);
+    		wb_led_set(led[8],get_green_LED_state()); // Visual feedback
+    		speed[0] = get_stagnation_left_wheel_speed();
+    		speed[1] = get_stagnation_right_wheel_speed();
+    	}
+    }
+    else if(swarm) // Converge and push
+    {
+    	stagnation_counter = stagnation_counter + 1;
+    	wb_led_set(led[9],OFF);
+    	if(stagnation_counter > stagnation_threshold)
+    	{
+    		stagnation = TRUE;
+        	for(it=0; it<NB_LEDS-2; it++)
+        	{
+        	    wb_led_set(led[it],OFF);
+        	}
+        	speed[0] = 0;
+        	speed[1] = 0;
+    		wb_differential_wheels_set_speed(speed[0],speed[1]);
+    		wb_robot_step(TIME_STEP);
+        	copy_IR_dist_array(); // Keep track of the sensor values right now
+        	for (it = 0; it<10; it++)
+        	{
+        		wb_differential_wheels_set_speed(speed[0],speed[1]);
+        		wb_robot_step(TIME_STEP);
+        	}
+    	}
+    	/*
+    	else if(stagnation_counter == 1) // Does converging help the group at this point?
+    	{
+    		copy_IR_dist_array();
+        	for (it = 0; it<10; it++)
+        	{
+        		wb_differential_wheels_set_speed(0,0);
+        		wb_robot_step(TIME_STEP);
+        	}
+            for (it=0;it<NB_LIGHT_SENS;it++)
+            {
+              IR_sensor_value[it] = wb_light_sensor_get_value(ls[it]);
+              int prev_IR = previous_IR_values[it] - 100;
+              if(IR_sensor_value[it] < prev_IR)
+              {
+            	  reset_stagnation();
+            	  find_new_spot(distance_sensors_value, DIST_THRESHOLD);
+              }
+            }
+    	}*/
+    	else
+    	{
+        	swarm_retrieval(IR_sensor_value, IR_THRESHOLD);
+        	for(it=0; it<NB_LEDS-2; it++)
+        	{
+        	    wb_led_set(led[it],get_LED_state(it));
+        	}
+        	speed[0] = get_retrieval_left_wheel_speed();
+        	speed[1] = get_retrieval_right_wheel_speed();
+    	}
+
+    }
+    else // Search and avoid
+    {
+    	stagnation_counter = 0;
+    	if (red_search_light)
+    		red_search_light = FALSE;
+    	else
+    		red_search_light = TRUE;
+    	for(it=0; it<NB_LEDS-2; it++)
+    	{
+    	    wb_led_set(led[it],OFF);
+    	}
+    	wb_led_set(led[9],red_search_light);
+		update_search_speed(distance_sensors_value, DIST_THRESHOLD);
+		speed[0] = get_search_left_wheel_speed();
+		speed[1] = get_search_right_wheel_speed();
+    }
+
+
+    /************************
+     *  End Brooks
+     ************************/
+
+    /* set speed values */
+    wb_differential_wheels_set_speed(speed[0],speed[1]);
+
+    /* perform a simulation step */
+    wb_robot_step(TIME_STEP);
+  }
+  /*
+  while(continue_shut_down)
+  {
+	  int sensors_over_threshold = 0;
+	  for (it = 0; it < 8; it++)
+	  {
+		  distance_sensors_value[it] = wb_distance_sensor_get_value(ps[it]);
+		  if(distance_sensors_value[it] > DIST_THRESHOLD)
+		  {
+			  sensors_over_threshold = sensors_over_threshold + 1;
+		  }
+	  }
+	  close_to_box = FALSE;
+	  for (it=0;it<NB_LIGHT_SENS;it++)
+	  {
+		  IR_sensor_value[it] = wb_light_sensor_get_value(ls[it]);
+		  if(IR_sensor_value[it] < IR_THRESHOLD)
+			  close_to_box = TRUE; // Prey retrieval
+	  }
+	  shut_down(close_to_box, sensors_over_threshold);
+	}
+	*/
+  wb_robot_cleanup();
+  return 0;
+}
