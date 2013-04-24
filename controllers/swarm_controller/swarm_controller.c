@@ -10,7 +10,9 @@
  * You may need to add include files like <webots/distance_sensor.h> or
  * <webots/differential_wheels.h>, etc.
  */
-#include <webots/robot.h>
+#include <webots/differential_wheels.h>
+#include <webots/distance_sensor.h>
+#include <webots/light_sensor.h>
 #include "search.c"
 #include "stagnation.c"
 #include "retrieval.c"
@@ -19,7 +21,7 @@
  */
 #define TIME_STEP 64
 #define SEARCH_THRESH 250
-#define RETRIEVAL_THRESH 2400
+#define RETRIEVAL_THRESH 2300
 #define SEARCH_LAYER = 0
 #define STAGNATION_LAYER = 1
 #define RETRIEVAL_LAYER = 2
