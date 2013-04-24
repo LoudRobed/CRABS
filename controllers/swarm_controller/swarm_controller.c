@@ -23,6 +23,9 @@
 #define SEARCH_LAYER = 0
 #define STAGNATION_LAYER = 1
 #define RETRIEVAL_LAYER = 2
+#define TRUE 1
+#define FALSE 0
+#define DIST_THRESHOLD 300
 /*
  * This is the main program.
  * The arguments of the main function can be specified by the
@@ -86,19 +89,17 @@ int main(int argc, char **argv)
    * Perform simulation steps of TIME_STEP milliseconds
    * and leave the loop when the simulation is over
    */
+  int EPOCH_TIME = 150; // # TimeSteps the robot tries to push, ranges from 100 to 300
+  int STOP_TIME = 0; // # Counts the TimeSteps the robot stands still before evaluating weather to push or realign.
+  int NOF_REALIGNMENTS = 0;
   while (wb_robot_step(TIME_STEP) != -1) {
     
-	  
-    /* 
-     * Read the sensors :
-     * Enter here functions to read sensor data, like:
-     *  double val = wb_distance_sensor_get_value(my_sensor);
-     */
 	int CONTROLLING_LAYER = 0;
 	double distance_sensors[8];
+	double previous_distance_sensors[8];
 	double light_sensors[8];
 	double retrieval_left_wheel_speed;
-    double retrieval_right_wheel_speed; 
+           double retrieval_right_wheel_speed; 
 	double search_left_wheel_speed;
 	double search_right_wheel_speed;
 	double stagnation_left_wheel_speed;
@@ -106,6 +107,7 @@ int main(int argc, char **argv)
 	int i;
 
 	//Getting data from the search layer
+	 
 	for(i=0; i<8; i++){
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
@@ -119,18 +121,60 @@ int main(int argc, char **argv)
     for (i=0; i<8 ; i++){
         light_sensors[i] = wb_light_sensor_get_value(ls[i]);
       }
-    
+    int senses_something = FALSE;
     for(i=0; i<8; i++){
       if(light_sensors[i] < RETRIEVAL_THRESH ){
-      swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
-      retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();
-      retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
-	  CONTROLLING_LAYER = 1;
-	  printf("Controlling layer set to stun!\n");
-	  break;
-      }
+			senses_something = TRUE;
+	  }
     }
-     
+
+	if(senses_something){
+		swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
+		CONTROLLING_LAYER = 1;
+		printf("Controlling layer set to stun!\n");
+      }
+
+		retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();
+		retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
+
+	// Pseudo-code for stagnation:
+	// Check if robot is pushing
+	// Check if it has been pushing for some time
+	// Try re-aligning with the box
+	// If re-aligning has been tried a given number of times, find a new spot.
+
+	
+	int stagnation = get_stagnation_state();
+
+	if(pushing_box() && !stagnation){ //Robot is simply pushing along, not a care in the world.
+		EPOCH_TIME = EPOCH_TIME+1;
+
+		if(EPOCH_TIME > 150){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
+			EPOCH_TIME = 0;
+			//This function evaluates how the pushing is going and sets the stagnation flag.
+			valuate_pushing(distance_sensors,previous_distance_sensors); 
+		}
+	}
+
+	stagnation = get_stagnation_state();
+
+	if(stagnation){ //Only if it is in stagnation do wee need to care about stuff that goes on down here, and it will stay in stagnation.
+		printf("STAGNATING!\n");	
+		if(NOF_REALIGNMENTS < 5){ //If it has not tried to realign itself more than five times yet, let's give it another go
+			NOF_REALIGNMENTS = NOF_REALIGNMENTS+1;
+			stagnation_recovery(distance_sensors, DIST_THRESHOLD);
+		}
+
+		if(NOF_REALIGNMENTS > 4){ //Thats it, I'm out.
+			reset_stagnation();
+			find_new_spot(distance_sensors, DIST_THRESHOLD);
+			NOF_REALIGNMENTS = 0;
+		}
+		
+		CONTROLLING_LAYER = 2;
+		stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
+		retrieval_right_wheel_speed = get_stagnation_right_wheel_speed();
+	}
 
 	if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
@@ -148,7 +192,8 @@ int main(int argc, char **argv)
 		//printf("Hello World!\n");
 		
 	}
-
+	for(i=0; i<8; i++){
+		previous_distance_sensors[i]=distance_sensors[i];
   };
   
   /* Enter your cleanup code here */
@@ -157,4 +202,5 @@ int main(int argc, char **argv)
   wb_robot_cleanup();
   
   return 0;
+}
 }

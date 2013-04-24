@@ -138,3 +138,7 @@ int get_LED_state(int LED_num)
 {
 	return LED[LED_num];
 }
+
+int pushing_box(){
+	return push;
+}
