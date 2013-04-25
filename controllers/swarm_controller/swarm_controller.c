@@ -112,7 +112,6 @@ int main(int argc, char **argv)
 
 	//Getting data from the search layer
 	int stagnation = get_stagnation_state();
-	printf("Stagnation: %d \n", stagnation);
 	for(i=0; i<8; i++){
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
@@ -201,4 +200,5 @@ stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 	}
   }
   wb_robot_cleanup();
+  return 0;
 }

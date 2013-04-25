@@ -210,11 +210,11 @@ void valuate_pushing(double dist_value[8], double prev_dist_value[8])
 
 	if((abs(dist_diff7)> DISTANCE_DIFF_THRESHOLD) && (abs(dist_diff0)> DISTANCE_DIFF_THRESHOLD))
 	{
-		has_recovered = TRUE; // Keep pushing, it is working
+		/*has_recovered = TRUE; // Keep pushing, it is working
 		green_LED_state = OFF; // No more recovery
-		align_counter = 0;
-	}
-	else if((dist_value[5] >NEIGHBOR_LIMIT)&&(dist_value[2]>NEIGHBOR_LIMIT)){ //Has any neighbors
+		align_counter = 0;*/
+	
+	if((dist_value[5] >NEIGHBOR_LIMIT)&&(dist_value[2]>NEIGHBOR_LIMIT)){ //Has any neighbors
 		has_recovered = TRUE; // Keep pushing, it is working
 		green_LED_state = OFF; // No more recovery
 		align_counter = 0;
@@ -229,6 +229,7 @@ void valuate_pushing(double dist_value[8], double prev_dist_value[8])
 			align_counter = 0;
 		}
 
+	}
 	}
 
 }
