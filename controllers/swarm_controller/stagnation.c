@@ -185,17 +185,6 @@ void reset_stagnation()
 	turn_left = NEUTRAL;
 	twice = 0;
 }
-
-int stagnation(double distance_sensors_value[8], int DIST_THRESHOLD){
-	
-	int stagnation = get_stagnation_state();
-	if(stagnation){
-		stagnation_recovery(distance_sensors_value, DIST_THRESHOLD);
-	}
-	return stagnation;
-
-}
-
 void stagnation_recovery(double distance_sensors_value[8], int DIST_THRESHOLD)
 {
 	if (align_counter < 2) // Align

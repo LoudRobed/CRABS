@@ -13,7 +13,6 @@
 #define TRUE 1
 #define FALSE 0
 #define PUSH_THRESHOLD 500
-#define RETRIEVAL_THRESH 2300
 
 /* Wheel speed variables */
 static double left_wheel_speed;
@@ -113,26 +112,13 @@ static void select_behavior(int IR_sensor_value[8])
 *******************************/
 
 /* Converge, push, and stagnation recovery */
-int swarm_retrieval(int IR_sensor_value[8], int IR_threshold)
+void swarm_retrieval(int IR_sensor_value[8], int IR_threshold)
 {
-	int senses_something = FALSE;
-	 if(IR_sensor_value[0] < RETRIEVAL_THRESH ){
-            senses_something = TRUE;
-        }else if(IR_sensor_value[7] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(IR_sensor_value[1] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(IR_sensor_value[6] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }
-
 	select_behavior(IR_sensor_value);
 	if(push)
 		push_box(IR_sensor_value, IR_threshold);
 	else // converge
 		converge_to_box(IR_sensor_value, IR_threshold);
-
-	return senses_something
 }
 
 /* */
