@@ -91,6 +91,15 @@ int main(int argc, char **argv)
   
   int counter = 0;
   double previous_distance_sensors[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+   double distance_sensors[8];
+      int light_sensors[8];
+      double retrieval_left_wheel_speed;
+      double retrieval_right_wheel_speed; 
+      double search_left_wheel_speed;
+      double search_right_wheel_speed;
+      double stagnation_left_wheel_speed;
+      double stagnation_right_wheel_speed;
+      int i;
   /* main loop
    * Perform simulation steps of TIME_STEP milliseconds
    * and leave the loop when the simulation is over
@@ -100,15 +109,7 @@ int main(int argc, char **argv)
   int NOF_REALIGNMENTS = 0;
   while (wb_robot_step(TIME_STEP) != -1) {
       int CONTROLLING_LAYER = 0;
-      double distance_sensors[8];
-      int light_sensors[8];
-      double retrieval_left_wheel_speed;
-      double retrieval_right_wheel_speed; 
-      double search_left_wheel_speed;
-      double search_right_wheel_speed;
-      double stagnation_left_wheel_speed;
-      double stagnation_right_wheel_speed;
-      int i;
+      
 
 	//Getting data from the search layer
 	int stagnation = get_stagnation_state();
@@ -126,21 +127,9 @@ int main(int argc, char **argv)
     for (i=0; i<8 ; i++){
        light_sensors[i] = wb_light_sensor_get_value(ls[i]);
     }
-    int senses_something = FALSE;
-    
-        if(light_sensors[0] < RETRIEVAL_THRESH ){
-            senses_something = TRUE;
-        }else if(light_sensors[7] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[1] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[6] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }
-    
+    int senses_something = swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
 
     if(senses_something){
-        swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
         CONTROLLING_LAYER = 1;
     }
 
@@ -173,22 +162,6 @@ stagnation_recovery(distance_sensors, DIST_THRESHOLD);
 stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 }
-/*    if(stagnation){ //Only if it is in stagnation do wee need to care about stuff that goes on down here, and it will stay in stagnation.	
-        if(NOF_REALIGNMENTS < 5){ //If it has not tried to realign itself more than five times yet, let's give it another go
-            NOF_REALIGNMENTS = NOF_REALIGNMENTS+1;
-            stagnation_recovery(distance_sensors, DIST_THRESHOLD);
-        }
-
-		if(NOF_REALIGNMENTS > 4){ //Thats it, I'm out.
-			reset_stagnation();
-			find_new_spot(distance_sensors, DIST_THRESHOLD);
-			NOF_REALIGNMENTS = 0;
-		}
-		
-		CONTROLLING_LAYER = 2;
-		stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
-		stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
-	}*/
 	if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
                
