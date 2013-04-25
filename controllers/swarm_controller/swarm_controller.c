@@ -24,8 +24,8 @@
 #define SEARCH_THRESH 250
 #define RETRIEVAL_THRESH 2300
 #define SEARCH_LAYER = 0
-#define STAGNATION_LAYER = 1
-#define RETRIEVAL_LAYER = 2
+#define STAGNATION_LAYER = 2
+#define RETRIEVAL_LAYER = 1
 #define TRUE 1
 #define FALSE 0
 #define DIST_THRESHOLD 400
@@ -128,22 +128,11 @@ int main(int argc, char **argv)
     //Getting data from the retrieval layer:
     
     
-    int senses_something = FALSE;
-    
-        if(light_sensors[0] < RETRIEVAL_THRESH ){
-            senses_something = TRUE;
-        }else if(light_sensors[7] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[1] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[6] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }
-    
+    int senses_something = swarm_retrieval(light_sensors, RETRIEVAL_THRESH);   
 
     if(senses_something){
-        swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
-        CONTROLLING_LAYER = 1;
+        
+        CONTROLLING_LAYER = RETRIEVAL_LAYER;
     }
 
     retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
