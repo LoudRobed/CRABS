@@ -16,5 +16,6 @@ void stagnation_recovery(double distance_sensors_value[8], int DIST_THRESHOLD);
 void valuate_pushing(double dist_value[8], double prev_dist_value[8]);
 void reset_stagnation();
 void find_new_spot(double distance_value[8], int DIST_THRESHOLD);
+int stagnation(double distance_sensors_value[8], int DIST_THRESHOLD);
 
 #endif /* STAGNATION_H_ */
