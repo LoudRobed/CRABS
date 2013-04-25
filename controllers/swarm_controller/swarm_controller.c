@@ -28,7 +28,7 @@
 #define RETRIEVAL_LAYER = 2
 #define TRUE 1
 #define FALSE 0
-#define DIST_THRESHOLD 300
+#define DIST_THRESHOLD 400
 /*
  * This is the main program.
  * The arguments of the main function can be specified by the
@@ -88,6 +88,9 @@ int main(int argc, char **argv)
   for (i=0; i<8 ; i++) {
     led[i] = wb_robot_get_device(led_names[i]);
   }
+  
+  int counter = 0;
+  double previous_distance_sensors[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   /* main loop
    * Perform simulation steps of TIME_STEP milliseconds
    * and leave the loop when the simulation is over
@@ -96,77 +99,87 @@ int main(int argc, char **argv)
   int STOP_TIME = 0; // # Counts the TimeSteps the robot stands still before evaluating weather to push or realign.
   int NOF_REALIGNMENTS = 0;
   while (wb_robot_step(TIME_STEP) != -1) {
-      printf("Step: %d", wb_robot_step(TIME_STEP));
-	int CONTROLLING_LAYER = 0;
-	double distance_sensors[8];
-	double previous_distance_sensors[8];
-	int light_sensors[8];
-	double retrieval_left_wheel_speed;
-           double retrieval_right_wheel_speed; 
-	double search_left_wheel_speed;
-	double search_right_wheel_speed;
-	double stagnation_left_wheel_speed;
-	double stagnation_right_wheel_speed;
-	int i;
+      int CONTROLLING_LAYER = 0;
+      double distance_sensors[8];
+      int light_sensors[8];
+      double retrieval_left_wheel_speed;
+      double retrieval_right_wheel_speed; 
+      double search_left_wheel_speed;
+      double search_right_wheel_speed;
+      double stagnation_left_wheel_speed;
+      double stagnation_right_wheel_speed;
+      int i;
 
 	//Getting data from the search layer
-	 
+	int stagnation = get_stagnation_state();
+	printf("Stagnation: %d \n", stagnation);
 	for(i=0; i<8; i++){
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
 
     update_search_speed(distance_sensors, SEARCH_THRESH);
-	search_left_wheel_speed = get_search_left_wheel_speed();
-	search_right_wheel_speed = get_search_right_wheel_speed();
+    search_left_wheel_speed = get_search_left_wheel_speed();
+    search_right_wheel_speed = get_search_right_wheel_speed();
 
-	//Getting data from the retrieval layer:
+    //Getting data from the retrieval layer:
     
     for (i=0; i<8 ; i++){
-        light_sensors[i] = wb_light_sensor_get_value(ls[i]);
-      }
+       light_sensors[i] = wb_light_sensor_get_value(ls[i]);
+    }
     int senses_something = FALSE;
-    for(i=0; i<8; i++){
-      if(light_sensors[i] < RETRIEVAL_THRESH ){
-			senses_something = TRUE;
-	  }
+    
+        if(light_sensors[0] < RETRIEVAL_THRESH ){
+            senses_something = TRUE;
+        }else if(light_sensors[7] < RETRIEVAL_THRESH){
+            senses_something = TRUE;
+        }else if(light_sensors[1] < RETRIEVAL_THRESH){
+            senses_something = TRUE;
+        }else if(light_sensors[6] < RETRIEVAL_THRESH){
+            senses_something = TRUE;
+        }
+    
+
+    if(senses_something){
+        swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
+        CONTROLLING_LAYER = 1;
     }
 
-	if(senses_something){
-		swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
-		CONTROLLING_LAYER = 1;
-		printf("Controlling layer set to stun!\n");
-      }
-
-		retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
-		retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
+    retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
+    retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
 
 	// Pseudo-code for stagnation:
 	// Check if robot is pushing
 	// Check if it has been pushing for some time
 	// Try re-aligning with the box
 	// If re-aligning has been tried a given number of times, find a new spot.
+    
+    if(stagnation == 0){ //Robot is simply pushing along, not a care in the world.
+//printf("No stagnation?");
+        EPOCH_TIME = EPOCH_TIME+1;
 
-	
-	int stagnation = get_stagnation_state();
+       if(EPOCH_TIME > 15){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
+          EPOCH_TIME = 0;
+          //This function evaluates how the pushing is going and sets the stagnation flag.
+          reset_stagnation();
+          valuate_pushing(distance_sensors,previous_distance_sensors);
 
-	if(pushing_box() && !stagnation){ //Robot is simply pushing along, not a care in the world.
-		EPOCH_TIME = EPOCH_TIME+1;
-
-		if(EPOCH_TIME > 150){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
-			EPOCH_TIME = 0;
-			//This function evaluates how the pushing is going and sets the stagnation flag.
-			valuate_pushing(distance_sensors,previous_distance_sensors); 
-		}
-	}
-
-	stagnation = get_stagnation_state();
-
-	if(stagnation){ //Only if it is in stagnation do wee need to care about stuff that goes on down here, and it will stay in stagnation.
-		printf("STAGNATING!\n");	
-		if(NOF_REALIGNMENTS < 5){ //If it has not tried to realign itself more than five times yet, let's give it another go
-			NOF_REALIGNMENTS = NOF_REALIGNMENTS+1;
-			stagnation_recovery(distance_sensors, DIST_THRESHOLD);
-		}
+          
+       }
+    }
+    for(i = 0; i < 8; i++){
+              previous_distance_sensors[i]=distance_sensors[i];
+     }
+if(stagnation){
+CONTROLLING_LAYER=2;
+stagnation_recovery(distance_sensors, DIST_THRESHOLD);
+stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
+stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
+}
+/*    if(stagnation){ //Only if it is in stagnation do wee need to care about stuff that goes on down here, and it will stay in stagnation.	
+        if(NOF_REALIGNMENTS < 5){ //If it has not tried to realign itself more than five times yet, let's give it another go
+            NOF_REALIGNMENTS = NOF_REALIGNMENTS+1;
+            stagnation_recovery(distance_sensors, DIST_THRESHOLD);
+        }
 
 		if(NOF_REALIGNMENTS > 4){ //Thats it, I'm out.
 			reset_stagnation();
@@ -177,21 +190,17 @@ int main(int argc, char **argv)
 		CONTROLLING_LAYER = 2;
 		stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 		stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
-	}
+	}*/
 	if(CONTROLLING_LAYER==1){
-	printf("RETRIEVING!\n");
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
                
 	}else if(CONTROLLING_LAYER==2){    
 
-     wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
+               wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
 	
 	}else{
 		wb_differential_wheels_set_speed(search_left_wheel_speed,search_right_wheel_speed);
 	}
-	for(i=0; i<8; i++){
-		previous_distance_sensors[i]=distance_sensors[i];
-            }
   }
   wb_robot_cleanup();
 }
