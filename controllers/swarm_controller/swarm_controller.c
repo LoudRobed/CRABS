@@ -22,7 +22,6 @@
  */
 #define TIME_STEP 64
 #define SEARCH_THRESH 250
-#define RETRIEVAL_THRESH 2300
 #define SEARCH_LAYER = 0
 #define STAGNATION_LAYER = 1
 #define RETRIEVAL_LAYER = 2
@@ -88,30 +87,32 @@ int main(int argc, char **argv)
   for (i=0; i<8 ; i++) {
     led[i] = wb_robot_get_device(led_names[i]);
   }
-  
+  double distance_sensors[8];
+  int light_sensors[8];
+  double retrieval_left_wheel_speed;
+  double retrieval_right_wheel_speed; 
+  double search_left_wheel_speed;
+  double search_right_wheel_speed;
+  double stagnation_left_wheel_speed;
+  double stagnation_right_wheel_speed;
+  int i;
   int counter = 0;
   double previous_distance_sensors[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  int EPOCH_TIME = 0; // # TimeSteps the robot tries to push, ranges from 100 to 300
+  
   /* main loop
    * Perform simulation steps of TIME_STEP milliseconds
    * and leave the loop when the simulation is over
    */
-  int EPOCH_TIME = 150; // # TimeSteps the robot tries to push, ranges from 100 to 300
-  int STOP_TIME = 0; // # Counts the TimeSteps the robot stands still before evaluating weather to push or realign.
-  int NOF_REALIGNMENTS = 0;
+  
+ 
   while (wb_robot_step(TIME_STEP) != -1) {
       int CONTROLLING_LAYER = 0;
-      double distance_sensors[8];
-      int light_sensors[8];
-      double retrieval_left_wheel_speed;
-      double retrieval_right_wheel_speed; 
-      double search_left_wheel_speed;
-      double search_right_wheel_speed;
-      double stagnation_left_wheel_speed;
-      double stagnation_right_wheel_speed;
-      int i;
+      
 
 	//Getting data from the search layer
 	int stagnation = get_stagnation_state();
+	
 	for(i=0; i<8; i++){
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
@@ -125,21 +126,11 @@ int main(int argc, char **argv)
     for (i=0; i<8 ; i++){
        light_sensors[i] = wb_light_sensor_get_value(ls[i]);
     }
-    int senses_something = FALSE;
-    
-        if(light_sensors[0] < RETRIEVAL_THRESH ){
-            senses_something = TRUE;
-        }else if(light_sensors[7] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[1] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }else if(light_sensors[6] < RETRIEVAL_THRESH){
-            senses_something = TRUE;
-        }
-    
+
+	int senses_something = swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
 
     if(senses_something){
-        swarm_retrieval(light_sensors, RETRIEVAL_THRESH);
+        
         CONTROLLING_LAYER = 1;
     }
 
