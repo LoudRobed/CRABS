@@ -153,17 +153,15 @@ int main(int argc, char **argv)
 	// Try re-aligning with the box
 	// If re-aligning has been tried a given number of times, find a new spot.
     
-    if(stagnation == 0){ //Robot is simply pushing along, not a care in the world.
+    if(stagnation == 0 && distance_sensors[7] > 300){ //Robot is simply pushing along, not a care in the world.
 //printf("No stagnation?");
         EPOCH_TIME = EPOCH_TIME+1;
 
-       if(EPOCH_TIME > 15){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
+       if(EPOCH_TIME > 150){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
           EPOCH_TIME = 0;
           //This function evaluates how the pushing is going and sets the stagnation flag.
           reset_stagnation();
           valuate_pushing(distance_sensors,previous_distance_sensors);
-
-          
        }
     }
     for(i = 0; i < 8; i++){
