@@ -110,17 +110,20 @@ int main(int argc, char **argv)
   while (wb_robot_step(TIME_STEP) != -1) {
       int CONTROLLING_LAYER = 0;
       
-
-	//Getting data from the search layer
-	int stagnation = get_stagnation_state();
-	printf("Stagnation: %d \n", stagnation);
+    
+	
 	for(i=0; i<8; i++){
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
+	//Getting data from the search layer
+        int stagnation = FALSE;
+        stagnation = get_stagnation_status(distance_sensors, DIST_THRESHOLD);
+        printf("Stagnation: %d \n", stagnation);
 
-    update_search_speed(distance_sensors, SEARCH_THRESH);
-    search_left_wheel_speed = get_search_left_wheel_speed();
-    search_right_wheel_speed = get_search_right_wheel_speed();
+        update_search_speed(distance_sensors, SEARCH_THRESH);
+        search_left_wheel_speed = get_search_left_wheel_speed();
+        search_right_wheel_speed = get_search_right_wheel_speed();
+
 
     //Getting data from the retrieval layer:
     
@@ -133,8 +136,7 @@ int main(int argc, char **argv)
         CONTROLLING_LAYER = 1;
     }
 
-    retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
-    retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
+    
 
 	// Pseudo-code for stagnation:
 	// Check if robot is pushing
@@ -143,7 +145,6 @@ int main(int argc, char **argv)
 	// If re-aligning has been tried a given number of times, find a new spot.
     
     if(stagnation == 0 && distance_sensors[7] > 300){ //Robot is simply pushing along, not a care in the world.
-//printf("No stagnation?");
         EPOCH_TIME = EPOCH_TIME+1;
 
        if(EPOCH_TIME > 150){ //Robot has been pushing for 150 (billion years), lets see how it's doing!
@@ -155,13 +156,21 @@ int main(int argc, char **argv)
     }
     for(i = 0; i < 8; i++){
               previous_distance_sensors[i]=distance_sensors[i];
-     }
-if(stagnation){
-CONTROLLING_LAYER=2;
-stagnation_recovery(distance_sensors, DIST_THRESHOLD);
-stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
-stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
+     } 
+    if(stagnation){
+    CONTROLLING_LAYER=2;
+  //  stagnation_recovery(distance_sensors, DIST_THRESHOLD);
+    
 }
+
+    retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
+    retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
+    
+    stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
+    stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
+    
+    
+
 	if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
                
