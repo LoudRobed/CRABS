@@ -117,15 +117,17 @@ int main(int argc, char **argv)
 		distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
 	}
 
+	for (i=0; i<8 ; i++){
+       light_sensors[i] = wb_light_sensor_get_value(ls[i]);
+    }
+
     update_search_speed(distance_sensors, SEARCH_THRESH);
     search_left_wheel_speed = get_search_left_wheel_speed();
     search_right_wheel_speed = get_search_right_wheel_speed();
 
     //Getting data from the retrieval layer:
     
-    for (i=0; i<8 ; i++){
-       light_sensors[i] = wb_light_sensor_get_value(ls[i]);
-    }
+    
     int senses_something = FALSE;
     
         if(light_sensors[0] < RETRIEVAL_THRESH ){
