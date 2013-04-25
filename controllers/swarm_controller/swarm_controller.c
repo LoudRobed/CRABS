@@ -126,7 +126,8 @@ int main(int argc, char **argv)
 
     update_search_speed(distance_sensors, SEARCH_THRESH);
    
-	
+	search_left_wheel_speed = get_search_left_wheel_speed();
+    search_right_wheel_speed = get_search_right_wheel_speed();
 
     //Send relevant sensor data to the retrieval layer 
     
@@ -149,7 +150,8 @@ int main(int argc, char **argv)
        }
     }
     
-	
+	retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
+    retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
 
 	//Send relevant sensor data to the retrieval layer 
 
@@ -158,12 +160,6 @@ int main(int argc, char **argv)
 	if(stagnation){
 		CONTROLLING_LAYER=STAGNATION_LAYER;
 	}
-	
-	search_left_wheel_speed = get_search_left_wheel_speed();
-    search_right_wheel_speed = get_search_right_wheel_speed();
-	
-	retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
-    retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
 	
 	stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 	stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
