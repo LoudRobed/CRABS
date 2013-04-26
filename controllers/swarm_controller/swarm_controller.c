@@ -152,17 +152,11 @@ stagnation_recovery(distance_sensors, DIST_THRESHOLD);
 stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 }
-
-	if(CONTROLLING_LAYER==1){
-
             if(STOP == 1) wb_differential_wheels_set_speed(0,0);
 	else if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
                
 	}else if(CONTROLLING_LAYER==2){    
-for(i = 0; i < 9; i++){
-wb_led_set(led[i], get_LED_state(i));
-}
          wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
 
 	}else{
