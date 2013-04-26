@@ -185,8 +185,11 @@ void reset_stagnation()
 	turn_left = NEUTRAL;
 	twice = 0;
 }
-void stagnation_recovery(double distance_sensors_value[8], int DIST_THRESHOLD)
+int stagnation_recovery(double distance_sensors_value[8], int DIST_THRESHOLD)
 {
+	int stagnation = get_stagnation_state();
+
+	if(stagnation){
 	if (align_counter < 2) // Align
 	{
 		align_counter = align_counter + 1;
@@ -198,7 +201,10 @@ void stagnation_recovery(double distance_sensors_value[8], int DIST_THRESHOLD)
 		LED_blink();
 		find_new_spot(distance_sensors_value, DIST_THRESHOLD);
 	}
+	}
 
+	return stagnation;
+	
 }
 
 /* To keep pushing or not to keep pushing, that is the question */

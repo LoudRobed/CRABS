@@ -100,7 +100,6 @@ int main(int argc, char **argv)
     
 	  int CONTROLLING_LAYER = 0;
       int stagnation = get_stagnation_state();
-	
 	  //Reading the sensors
 		for(i=0; i<8; i++){
 			distance_sensors[i] = wb_distance_sensor_get_value(ps[i]);
@@ -109,7 +108,9 @@ int main(int argc, char **argv)
 		 for (i=0; i<8 ; i++){
 			light_sensors[i] = wb_light_sensor_get_value(ls[i]);
 		}
-
+	
+	//int stagnation = stagnation_recovery(distance_sensors, DIST_THRESHOLD);
+	
 	//Sending relevant sensory input to the search layer, retrieves proposed action
     update_search_speed(distance_sensors, SEARCH_THRESH);
     search_left_wheel_speed = get_search_left_wheel_speed();
@@ -152,6 +153,8 @@ stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 }
 
+	if(CONTROLLING_LAYER==1){
+
             if(STOP == 1) wb_differential_wheels_set_speed(0,0);
 	else if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
@@ -160,7 +163,7 @@ stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 for(i = 0; i < 9; i++){
 wb_led_set(led[i], get_LED_state(i));
 }
-               wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
+         wb_differential_wheels_set_speed(stagnation_left_wheel_speed,stagnation_right_wheel_speed);
 
 	}else{
 		wb_differential_wheels_set_speed(search_left_wheel_speed,search_right_wheel_speed);
