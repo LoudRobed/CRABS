@@ -13,7 +13,7 @@
 #define TRUE 1
 #define FALSE 0
 #define PUSH_THRESHOLD 500
-#define RETRIEVAL_THRESH 2300
+#define RETRIEVAL_THRESH 2600
 
 /* Wheel speed variables */
 static double left_wheel_speed;
