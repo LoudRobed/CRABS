@@ -17,14 +17,14 @@
 #define ON 1
 #define OFF 0
 #define IR_DIFF_THRESHOLD 4
-#define DISTANCE_DIFF_THRESHOLD 500
-#define REVERSE_LIMIT 20
-#define TURN_LIMIT 10
-#define FORWARD_LIMIT 40
-#define NEIGHBOR_LIMIT 300
+#define DISTANCE_DIFF_THRESHOLD 600
+#define REVERSE_LIMIT 16
+#define TURN_LIMIT 11
+#define FORWARD_LIMIT 16
+#define NEIGHBOR_LIMIT 200
 
 #define ALIGN_STRAIGTH_THRESHOLD 10 // If bigger, align straight
-#define LOW_DIST_VALUE 10 // if lower (and detecting IR), the sensor is close.
+#define LOW_DIST_VALUE 2100 // if lower (and detecting IR), the sensor is close.
 
 /* Wheel speed variables */
 static double left_wheel_speed;
@@ -207,6 +207,12 @@ void valuate_pushing(double dist_value[8], double prev_dist_value[8])
 	// The front IR sensors pushing against the box
 	int dist_diff7 = prev_dist_value[7] - dist_value[7];
 	int dist_diff0 = prev_dist_value[0] - dist_value[0];
+	
+	int numFriends = 0;
+	if(dist_value[2] > NEIGHBOR_LIMIT) numFriends = numFriends + 1;
+	if(dist_value[5] > NEIGHBOR_LIMIT) numFriends = numFriends + 1;
+	if(dist_value[4] > NEIGHBOR_LIMIT) numFriends = numFriends + 1;
+	if(dist_value[3] > NEIGHBOR_LIMIT) numFriends = numFriends + 1;
 
 	if((abs(dist_diff7)> DISTANCE_DIFF_THRESHOLD) && (abs(dist_diff0)> DISTANCE_DIFF_THRESHOLD))
 	{
@@ -214,19 +220,19 @@ void valuate_pushing(double dist_value[8], double prev_dist_value[8])
 		green_LED_state = OFF; // No more recovery
 		align_counter = 0;
 	
-	}else if((dist_value[5] >NEIGHBOR_LIMIT)&&(dist_value[2]>NEIGHBOR_LIMIT)){ //Has any neighbors
+	}else if(numFriends > 2){ //Has any neighbors
 		has_recovered = TRUE; // Keep pushing, it is working
 		green_LED_state = OFF; // No more recovery
 		align_counter = 0;
 	}
-	else if((dist_value[5] >NEIGHBOR_LIMIT)||(dist_value[2]>NEIGHBOR_LIMIT)){ //Has any neighbors
+	else if(numFriends == 1){ //Has any neighbors
 		// Roll a dice, do i trust just one team-mate?
 		double ran = rand()/((double)(RAND_MAX)+1);
-		if (ran > 0.5)
+		if (ran > 0.8)
 		{
 			has_recovered = TRUE; // Keep pushing, it is working
 			green_LED_state = OFF; // No more recovery
-			align_counter = 0;
+			align_counter = 2;
 		}
 
 	}

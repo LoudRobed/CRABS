@@ -57,7 +57,7 @@ static void update_speed(int IR_number)
         left_wheel_speed = left_wheel_speed + 500;
 
     else if(IR_number == 4)
-        right_wheel_speed = right_wheel_speed + 500;
+        right_wheel_speed = right_wheel_speed - 500;
 }
 /* The movement for converging to the box */
 static void converge_to_box(int IR_sensor_value[8], int IR_threshold)
@@ -118,7 +118,7 @@ int swarm_retrieval(int IR_sensor_value[8], int IR_threshold)
 	
 	
     int senses_something = FALSE;
-    
+    /*
         if(IR_sensor_value[0] < RETRIEVAL_THRESH ){
             senses_something = TRUE;
         }else if(IR_sensor_value[7] < RETRIEVAL_THRESH){
@@ -127,6 +127,12 @@ int swarm_retrieval(int IR_sensor_value[8], int IR_threshold)
             senses_something = TRUE;
         }else if(IR_sensor_value[6] < RETRIEVAL_THRESH){
             senses_something = TRUE;
+        }*/
+        int i = 0;
+        for(i = 0; i < 8; i++){
+           if(IR_sensor_value[i] < RETRIEVAL_THRESH){
+           senses_something = TRUE;
+           }
         }
     
 	select_behavior(IR_sensor_value);
