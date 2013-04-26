@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   int counter = 0;
   double previous_distance_sensors[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   int EPOCH_TIME = 0; // # TimeSteps the robot tries to push, ranges from 100 to 300
-  
+  int STOP = 0;  
   /* main loop
    * Perform simulation steps of TIME_STEP milliseconds
    * and leave the loop when the simulation is over
@@ -127,20 +127,24 @@ int main(int argc, char **argv)
     retrieval_left_wheel_speed = get_retrieval_left_wheel_speed();		
     retrieval_right_wheel_speed = get_retrieval_right_wheel_speed();
 
-    
+
     if(stagnation == 0 && distance_sensors[7] > 300){ 
 
         EPOCH_TIME = EPOCH_TIME+1;
-
-       if(EPOCH_TIME > 150){ 
+       if(EPOCH_TIME == 140){
+           for(i = 0; i < 8; i++){
+              previous_distance_sensors[i]=distance_sensors[i];
+              STOP = 1;
+           }          
+       }
+       else if(EPOCH_TIME > 150){ 
           EPOCH_TIME = 0;
+          STOP = 0;
           reset_stagnation();
           valuate_pushing(distance_sensors,previous_distance_sensors);
        }
     }
-    for(i = 0; i < 8; i++){
-              previous_distance_sensors[i]=distance_sensors[i];
-     }
+
 
 if(stagnation){
 CONTROLLING_LAYER=2;
@@ -149,10 +153,10 @@ stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
 stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
 }
 
-stagnation_left_wheel_speed = get_stagnation_left_wheel_speed();
-stagnation_right_wheel_speed = get_stagnation_right_wheel_speed();
-
 	if(CONTROLLING_LAYER==1){
+
+            if(STOP == 1) wb_differential_wheels_set_speed(0,0);
+	else if(CONTROLLING_LAYER==1){
 	     wb_differential_wheels_set_speed(retrieval_left_wheel_speed,retrieval_right_wheel_speed);
                
 	}else if(CONTROLLING_LAYER==2){    
